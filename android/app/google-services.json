@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1044949417899",
+    "project_id": "meal-tracker-flutter",
+    "storage_bucket": "meal-tracker-flutter.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1044949417899:android:414b355d2fe4c85f461cee",
+        "android_client_info": {
+          "package_name": "com.example.meal_tracker_flutter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCPxC4bOILhFryf1wRzJx1nxDRbztRL3Fs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
