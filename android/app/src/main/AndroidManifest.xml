@@ -1,6 +1,19 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="com.example.meal_tracker_flutter">
 
+          <!-- Allow Internet (usually already present) -->
+<uses-permission android:name="android.permission.INTERNET"/>
+
+<!-- For camera capture -->
+<uses-permission android:name="android.permission.CAMERA"/>
+
+<!-- For reading from the gallery -->
+<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+
+<!-- (Optional) If you write edited files anywhere -->
+<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+
+
 <!-- <manifest xmlns:android="http://schemas.android.com/apk/res/android"> -->
     <application
         android:label="meal_tracker_flutter"
