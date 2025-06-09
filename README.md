@@ -130,6 +130,8 @@ Open Firebase console → Analytics → DebugView. Then use the app and observe 
 
 ```
 lib/
+|--assets/AppIcon.png
+|
 ├── controllers/
 │   ├── add_edit_meal_controller.dart
 │   ├── forgot_password_controller.dart
