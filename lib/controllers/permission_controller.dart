@@ -3,7 +3,7 @@
 import 'package:permission_handler/permission_handler.dart';
 
 /// Handles requesting and (if needed) directing the user to enable
-/// camera, gallery (photos), and storage permissions.
+
 class PermissionController {
   /// The set of permissions we need at startup.
   final List<Permission> _requiredPermissions = [

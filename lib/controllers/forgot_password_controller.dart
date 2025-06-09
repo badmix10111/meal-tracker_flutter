@@ -1,5 +1,3 @@
-// lib/controllers/forgot_password_controller.dart
-
 import 'package:firebase_auth/firebase_auth.dart';
 
 /// Thrown when password reset fails with a user-friendly message.

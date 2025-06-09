@@ -4,11 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:firebase_analytics/observer.dart';
 import 'package:permission_handler/permission_handler.dart';
-
 import 'helpers/restart_widget.dart';
-import 'controllers/permission_controller.dart';
 import 'views/error_page.dart';
 import 'views/sign_in_page.dart';
 import 'views/sign_up_page.dart';
@@ -17,35 +14,57 @@ import 'views/meal_list_page.dart';
 import 'views/add_edit_meal_page.dart';
 import 'views/report_page.dart';
 
-Future<void> _initializeApp() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(); // picks up your json/plist
-
-  // Request runtime permissions on both platforms
-  await PermissionController().requestAllPermissions();
-
-  // Any uncaught Flutter error will show our friendly ErrorPage
-  ErrorWidget.builder = (FlutterErrorDetails details) {
-    return ErrorPage();
-  };
+  await Firebase.initializeApp();
+  runApp(const PermissionGate());
 }
 
-void main() async {
-  await _initializeApp();
-  runApp(const RestartWidget(child: MyApp()));
+/// A widget that requests all permissions before showing the real app.
+class PermissionGate extends StatefulWidget {
+  const PermissionGate({super.key});
+
+  @override
+  State<PermissionGate> createState() => _PermissionGateState();
+}
+
+class _PermissionGateState extends State<PermissionGate> {
+  @override
+  void initState() {
+    super.initState();
+    _askPermissions();
+  }
+
+  Future<void> _askPermissions() async {
+    // These calls will trigger the native iOS/Android dialogs
+    await [
+      Permission.camera,
+      Permission.photos, //  photo library
+      Permission.mediaLibrary, //  photo library (alternate)
+      Permission.locationWhenInUse, //  location
+      Permission.storage, //  storage
+    ].request();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Immediately show the real app UI.
+    return const RestartWidget(child: MyApp());
+  }
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // Firebase Analytics setup
   static final FirebaseAnalytics analytics = FirebaseAnalytics.instance;
   static final FirebaseAnalyticsObserver observer =
       FirebaseAnalyticsObserver(analytics: analytics);
 
   @override
   Widget build(BuildContext context) {
-    // If not authenticated, start at sign‐in; otherwise show meals
+    // Set our global error screen
+    ErrorWidget.builder = (FlutterErrorDetails details) => const ErrorPage();
+
     final initialRoute =
         FirebaseAuth.instance.currentUser == null ? '/sign-in' : '/meals';
 
@@ -55,6 +74,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(useMaterial3: true),
       initialRoute: initialRoute,
       routes: {
+        // Navigate through all views
         '/sign-in': (_) => const SignInPage(),
         '/sign-up': (_) => const SignUpPage(),
         '/forgot-password': (_) => const ForgotPasswordPage(),

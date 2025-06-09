@@ -1,10 +1,9 @@
-// lib/views/meal_list_page.dart
-
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../controllers/meal_list_controller.dart';
@@ -12,6 +11,8 @@ import '../helpers/firestore_service.dart';
 import '../models/meals_models.dart';
 import 'add_edit_meal_page.dart';
 
+// This page displays a list of meals for the authenticated user,
+// allowing filtering, searching, sharing, and navigation to reports.
 class MealListPage extends StatefulWidget {
   const MealListPage({Key? key}) : super(key: key);
 
@@ -22,7 +23,7 @@ class MealListPage extends StatefulWidget {
 class _MealListPageState extends State<MealListPage> {
   final _controller = MealListController(FirestoreService());
   final _searchCtrl = TextEditingController();
-  String? _filterType;
+  String? _filterType; // 'Breakfast', 'Lunch', or 'Dinner'
 
   @override
   void dispose() {
@@ -30,6 +31,7 @@ class _MealListPageState extends State<MealListPage> {
     super.dispose();
   }
 
+  /// Filter meals based on selected type and search input
   bool _matchesFilter(Meal meal) {
     final matchesType = _filterType == null || meal.type == _filterType;
     final query = _searchCtrl.text.trim().toLowerCase();
@@ -38,6 +40,7 @@ class _MealListPageState extends State<MealListPage> {
     return matchesType && matchesSearch;
   }
 
+  /// Confirm sign-out from user and perform sign-out if accepted
   Future<void> _confirmSignOut() async {
     final isIOS =
         Theme.of(context).platform == TargetPlatform.iOS || Platform.isIOS;
@@ -91,21 +94,48 @@ class _MealListPageState extends State<MealListPage> {
     }
   }
 
+  /// Safely share a meal using the latest SharePlus API with error handling
   Future<void> _handleShare(Meal meal) async {
     try {
+      // Build the text to share
       final text = _controller.buildShareText(meal);
+      final subject = 'My meal: ${meal.title}';
+
+      // Try to get the render box for share origin positioning (can be null)
       final box = context.findRenderObject() as RenderBox?;
-      await Share.share(
-        text,
-        subject: 'My meal: ${meal.title}',
-        sharePositionOrigin:
-            box != null ? box.localToGlobal(Offset.zero) & box.size : null,
+
+      // Use SharePlus instance API with new ShareParams
+      final result = await SharePlus.instance.share(
+        ShareParams(
+          text: text,
+          subject: subject,
+          sharePositionOrigin:
+              box != null ? box.localToGlobal(Offset.zero) & box.size : null,
+        ),
       );
+
+      // Optional: handle result
+      switch (result.status) {
+        case ShareResultStatus.success:
+          debugPrint('✅ Share completed successfully');
+          break;
+        case ShareResultStatus.dismissed:
+          debugPrint('ℹ️ Share dismissed by user');
+          break;
+        case ShareResultStatus.unavailable:
+          _showError('Sharing is not available on this device.');
+          break;
+      }
+    } on PlatformException catch (e) {
+      // Catch platform-specific exceptions (e.g. share service crash)
+      _showError('Platform error: ${e.message}');
     } catch (e) {
-      _showError('Could not share meal: $e');
+      // Catch any other unexpected errors
+      _showError('An unexpected error occurred: $e');
     }
   }
 
+  /// Display error to user based on platform style
   void _showError(String message) {
     final isIOS =
         Theme.of(context).platform == TargetPlatform.iOS || Platform.isIOS;
@@ -133,9 +163,9 @@ class _MealListPageState extends State<MealListPage> {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      return _unauthenticatedView();
-    }
+
+    // Fallback if no user is signed in
+    if (user == null) return _unauthenticatedView();
 
     final isIOS =
         Theme.of(context).platform == TargetPlatform.iOS || Platform.isIOS;
@@ -143,6 +173,7 @@ class _MealListPageState extends State<MealListPage> {
     return isIOS ? _buildCupertino(user.uid) : _buildMaterial(user.uid);
   }
 
+  /// UI if user is not authenticated
   Widget _unauthenticatedView() {
     return Scaffold(
       body: Center(
@@ -154,19 +185,27 @@ class _MealListPageState extends State<MealListPage> {
     );
   }
 
+  /// Cupertino layout with an Add-Meal button added
   Widget _buildCupertino(String uid) {
     return CupertinoPageScaffold(
-      backgroundColor: CupertinoColors.extraLightBackgroundGray,
       navigationBar: CupertinoNavigationBar(
         middle: const Text('Your Meals'),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Add Meal
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              child: const Icon(CupertinoIcons.add),
+              onPressed: _goToAddMeal,
+            ),
+            // Reports
             CupertinoButton(
               padding: EdgeInsets.zero,
               child: const Icon(CupertinoIcons.chart_bar),
               onPressed: () => Navigator.pushNamed(context, '/reports'),
             ),
+            // Sign Out
             CupertinoButton(
               padding: EdgeInsets.zero,
               child: const Icon(CupertinoIcons.square_arrow_right),
@@ -175,13 +214,18 @@ class _MealListPageState extends State<MealListPage> {
           ],
         ),
       ),
-      child: SafeArea(child: _buildBody(uid, isIOS: true)),
+      child: SafeArea(
+        child: Material(
+          color: Colors.transparent,
+          child: _buildBody(uid),
+        ),
+      ),
     );
   }
 
+  /// Material layout
   Widget _buildMaterial(String uid) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
         title: const Text('Your Meals'),
         actions: [
@@ -197,7 +241,7 @@ class _MealListPageState extends State<MealListPage> {
           ),
         ],
       ),
-      body: _buildBody(uid, isIOS: false),
+      body: _buildBody(uid),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _goToAddMeal,
         icon: const Icon(Icons.add),
@@ -206,64 +250,84 @@ class _MealListPageState extends State<MealListPage> {
     );
   }
 
-  Widget _buildBody(String uid, {required bool isIOS}) {
-    return Column(
-      children: [
-        const SizedBox(height: 12),
-        _buildFilterRow(),
-        const SizedBox(height: 8),
-        Expanded(child: _buildMealList(uid)),
-      ],
-    );
-  }
+  /// Main content layout, scrollable and responsive
+  Widget _buildBody(String uid) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final padding = screenWidth * 0.05;
 
-  Widget _buildFilterRow() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: InputDecorator(
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                contentPadding:
-                    EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String?>(
-                  value: _filterType,
-                  hint: const Text('All Types'),
-                  isExpanded: true,
-                  items: [null, 'Breakfast', 'Lunch', 'Dinner']
-                      .map((t) => DropdownMenuItem(
-                            value: t,
-                            child: Text(t ?? 'All'),
-                          ))
-                      .toList(),
-                  onChanged: (val) => setState(() => _filterType = val),
-                ),
-              ),
+    return SingleChildScrollView(
+      padding: EdgeInsets.symmetric(horizontal: padding, vertical: 16),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minHeight: screenHeight * 0.8),
+        child: Column(
+          children: [
+            _buildFilterRow(),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: screenHeight * 0.7,
+              child: _buildMealList(uid),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            flex: 3,
-            child: TextField(
-              controller: _searchCtrl,
-              decoration: const InputDecoration(
-                hintText: 'Search by title…',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
-              ),
-              onChanged: (_) => setState(() {}),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
+  /// Dropdown + search row that adapts to screen size
+  Widget _buildFilterRow() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 600;
+
+        return Row(
+          children: [
+            // Dropdown filter
+            Flexible(
+              flex: isWide ? 1 : 2,
+              child: InputDecorator(
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String?>(
+                    value: _filterType,
+                    hint: const Text('All Types'),
+                    isExpanded: true,
+                    items: [null, 'Breakfast', 'Lunch', 'Dinner']
+                        .map((t) => DropdownMenuItem(
+                              value: t,
+                              child: Text(t ?? 'All'),
+                            ))
+                        .toList(),
+                    onChanged: (val) => setState(() => _filterType = val),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Search input
+            Flexible(
+              flex: isWide ? 2 : 3,
+              child: TextField(
+                controller: _searchCtrl,
+                decoration: const InputDecoration(
+                  hintText: 'Search by title…',
+                  prefixIcon: Icon(Icons.search),
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Builds and filters the meal list with scrollable layout
   Widget _buildMealList(String uid) {
     return StreamBuilder<List<Meal>>(
       stream: _controller.mealsStream(uid),
@@ -285,6 +349,7 @@ class _MealListPageState extends State<MealListPage> {
         }
 
         final filtered = (snapshot.data ?? []).where(_matchesFilter).toList();
+
         if (filtered.isEmpty) {
           return Center(
             child: Text(
@@ -295,9 +360,8 @@ class _MealListPageState extends State<MealListPage> {
         }
 
         return ListView.separated(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-          separatorBuilder: (_, __) => const SizedBox(height: 8),
           itemCount: filtered.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 8),
           itemBuilder: (context, index) {
             final meal = filtered[index];
             final time = meal.timestamp;
@@ -307,8 +371,7 @@ class _MealListPageState extends State<MealListPage> {
             return Card(
               elevation: 1,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
+                  borderRadius: BorderRadius.circular(8)),
               child: ListTile(
                 contentPadding:
                     const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
@@ -317,12 +380,14 @@ class _MealListPageState extends State<MealListPage> {
                         borderRadius: BorderRadius.circular(6),
                         child: Image.network(
                           meal.photoUrl!,
-                          width: 56,
-                          height: 56,
+                          width: MediaQuery.of(context).size.width * 0.15,
+                          height: MediaQuery.of(context).size.width * 0.15,
                           fit: BoxFit.cover,
                         ),
                       )
-                    : const Icon(Icons.fastfood, size: 40, color: Colors.grey),
+                    : Icon(Icons.fastfood,
+                        size: MediaQuery.of(context).size.width * 0.10,
+                        color: Colors.grey),
                 title: Text(meal.title),
                 subtitle: Text('${meal.type} • $timeStr'),
                 trailing: IconButton(
@@ -338,6 +403,7 @@ class _MealListPageState extends State<MealListPage> {
     );
   }
 
+  /// Navigate to add new meal
   void _goToAddMeal() {
     Navigator.push(
       context,
@@ -345,6 +411,7 @@ class _MealListPageState extends State<MealListPage> {
     );
   }
 
+  /// Navigate to edit existing meal
   void _goToEditMeal(Meal meal) {
     Navigator.push(
       context,

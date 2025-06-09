@@ -3,32 +3,27 @@
     "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+  <!-- App identity -->
   <key>CFBundleDevelopmentRegion</key>
   <string>$(DEVELOPMENT_LANGUAGE)</string>
-  <key>CFBundleDisplayName</key>
+  <key>CFBundleIdentifier</key>
+  <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+  <key>CFBundleName</key>
   <string>Meal Tracker Flutter</string>
   <key>CFBundleExecutable</key>
   <string>$(EXECUTABLE_NAME)</string>
-  <key>CFBundleIdentifier</key>
-  <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-  <key>CFBundleInfoDictionaryVersion</key>
-  <string>6.0</string>
-  <key>CFBundleName</key>
-  <string>meal_tracker_flutter</string>
-  <key>CFBundlePackageType</key>
-  <string>APPL</string>
-  <key>CFBundleShortVersionString</key>
-  <string>$(FLUTTER_BUILD_NAME)</string>
-  <key>CFBundleSignature</key>
-  <string>????</string>
   <key>CFBundleVersion</key>
   <string>$(FLUTTER_BUILD_NUMBER)</string>
+  <key>CFBundleShortVersionString</key>
+  <string>$(FLUTTER_BUILD_NAME)</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
   <key>LSRequiresIPhoneOS</key>
   <true/>
+
+  <!-- Launch screen & orientations -->
   <key>UILaunchStoryboardName</key>
   <string>LaunchScreen</string>
-  <key>UIMainStoryboardFile</key>
-  <string>Main</string>
   <key>UISupportedInterfaceOrientations</key>
   <array>
     <string>UIInterfaceOrientationPortrait</string>
@@ -42,23 +37,36 @@
     <string>UIInterfaceOrientationLandscapeLeft</string>
     <string>UIInterfaceOrientationLandscapeRight</string>
   </array>
-  <key>CADisableMinimumFrameDurationOnPhone</key>
-  <true/>
-  <key>UIApplicationSupportsIndirectInputEvents</key>
-  <true/>
 
-  <!-- CAMERA & PHOTO LIBRARY PERMISSIONS -->
+  <!-- Permissions -->
   <key>NSCameraUsageDescription</key>
   <string>This app needs camera access to take photos of your meals.</string>
   <key>NSPhotoLibraryUsageDescription</key>
   <string>This app needs photo library access to select existing meal images.</string>
+  <key>NSPhotoLibraryAddUsageDescription</key>
+  <string>This app needs permission to save meal photos back to your library.</string>
+  <key>NSLocationWhenInUseUsageDescription</key>
+  <string>This app needs location access to tag where meals were eaten.</string>
 
-  <!-- OPTIONAL: enable sharing to WhatsApp, mail, etc. -->
+  <!-- Local network for debugger -->
+  <key>NSBonjourServices</key>
+  <array>
+    <string>_dartobservatory._tcp</string>
+  </array>
+  <key>NSLocalNetworkUsageDescription</key>
+  <string>Allow local network access for Flutter debugging</string>
+
+  <!-- Optional URL schemes -->
   <key>LSApplicationQueriesSchemes</key>
   <array>
     <string>whatsapp</string>
     <string>mailto</string>
     <string>tel</string>
   </array>
+
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
 </dict>
 </plist>

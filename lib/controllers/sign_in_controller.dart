@@ -15,7 +15,7 @@ class SignInController {
   SignInController(this._auth);
 
   /// Attempts to sign in with [email] and [password].
-  /// Throws [SignInException] on failure.
+
   Future<void> signIn({
     required String email,
     required String password,

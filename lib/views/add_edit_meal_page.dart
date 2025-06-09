@@ -11,9 +11,10 @@ import '../controllers/add_edit_meal_controller.dart';
 import '../helpers/firestore_service.dart';
 import '../models/meals_models.dart';
 
+/// Page to add or edit a meal. Includes form fields, image picker, and nutritional info.
 class AddEditMealPage extends StatefulWidget {
   final Meal? existingMeal;
-  const AddEditMealPage({Key? key, this.existingMeal}) : super(key: key);
+  const AddEditMealPage({super.key, this.existingMeal});
 
   @override
   State<AddEditMealPage> createState() => _AddEditMealPageState();
@@ -22,11 +23,8 @@ class AddEditMealPage extends StatefulWidget {
 class _AddEditMealPageState extends State<AddEditMealPage> {
   final _formKey = GlobalKey<FormState>();
   late final AddEditMealController _controller;
-
-  // backing meal (cloned if editing)
   late Meal _baseMeal;
 
-  // text controllers
   late final TextEditingController _titleCtrl,
       _descCtrl,
       _portionCtrl,
@@ -35,11 +33,8 @@ class _AddEditMealPageState extends State<AddEditMealPage> {
       _carbsCtrl,
       _fatsCtrl;
 
-  // image state
   File? _pickedImage;
   bool _removeExistingPhoto = false;
-
-  // other form state
   String _type = 'Breakfast';
   DateTime _timestamp = DateTime.now();
   bool _loading = false;
@@ -150,13 +145,19 @@ class _AddEditMealPageState extends State<AddEditMealPage> {
     );
     if (time == null) return;
     setState(() {
-      _timestamp =
-          DateTime(date.year, date.month, date.day, time.hour, time.minute);
+      _timestamp = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
+      );
     });
   }
 
   String? _required(String? v) =>
       (v == null || v.trim().isEmpty) ? 'Required' : null;
+
   String? _number(String? v) {
     if (v == null || v.trim().isEmpty) return null;
     return int.tryParse(v.trim()) == null ? 'Invalid number' : null;
@@ -169,7 +170,6 @@ class _AddEditMealPageState extends State<AddEditMealPage> {
       _errorText = null;
     });
 
-    // build updated meal
     final updated = _baseMeal.copyWith(
       type: _type,
       title: _titleCtrl.text.trim(),
@@ -183,10 +183,6 @@ class _AddEditMealPageState extends State<AddEditMealPage> {
     );
 
     try {
-      // if you implement photo upload in your controller:
-      // if (_pickedImage != null) {
-      //   await _controller.uploadPhoto(updated.id, _pickedImage!);
-      // }
       await _controller.saveMeal(updated);
       if (!mounted) return;
       Navigator.pop(context);
@@ -200,7 +196,6 @@ class _AddEditMealPageState extends State<AddEditMealPage> {
   }
 
   Widget _buildPhotoPicker() {
-    // three states: picked, original (and not removed), placeholder
     if (_pickedImage != null) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(8),
@@ -268,124 +263,151 @@ class _AddEditMealPageState extends State<AddEditMealPage> {
     final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
     final titleText = widget.existingMeal == null ? 'Add Meal' : 'Edit Meal';
 
-    final form = SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (_errorText != null) ...[
-              Text(
-                _errorText!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-            ],
-
-            _buildPhotoPicker(),
-            const SizedBox(height: 16),
-
-            DropdownButtonFormField<String>(
-              value: _type,
-              decoration: const InputDecoration(labelText: 'Meal Type'),
-              items: ['Breakfast', 'Lunch', 'Dinner']
-                  .map((t) => DropdownMenuItem(
-                        value: t,
-                        child: Text(t),
-                      ))
-                  .toList(),
-              onChanged: (v) => setState(() => _type = v!),
-            ),
-            const SizedBox(height: 12),
-
-            TextFormField(
-              controller: _titleCtrl,
-              decoration: const InputDecoration(labelText: 'Title'),
-              maxLength: 100,
-              validator: _required,
-            ),
-            const SizedBox(height: 12),
-
-            TextFormField(
-              controller: _descCtrl,
-              decoration: const InputDecoration(labelText: 'Description'),
-              maxLines: 3,
-              maxLength: 300,
-            ),
-            const SizedBox(height: 12),
-
-            TextFormField(
-              controller: _portionCtrl,
-              decoration:
-                  const InputDecoration(labelText: 'Portion / Quantity'),
-              validator: _required,
-            ),
-            const SizedBox(height: 12),
-
-            // optional numeric fields
-            for (final pair in [
-              ['Calories (optional)', _caloriesCtrl],
-              ['Protein (g, optional)', _proteinCtrl],
-              ['Carbs (g, optional)', _carbsCtrl],
-              ['Fats (g, optional)', _fatsCtrl],
-            ])
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: TextFormField(
-                  controller: pair[1] as TextEditingController,
-                  decoration: InputDecoration(labelText: pair[0] as String),
-                  keyboardType: TextInputType.number,
-                  validator: _number,
-                ),
-              ),
-
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'When: ${DateFormat.yMMMd().add_jm().format(_timestamp)}',
+    // Build the scrollable form
+    final form = LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_errorText != null) ...[
+                    Text(
+                      _errorText!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  _buildPhotoPicker(),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: _type,
+                    decoration: const InputDecoration(labelText: 'Meal Type'),
+                    items: ['Breakfast', 'Lunch', 'Dinner']
+                        .map((t) => DropdownMenuItem(
+                              value: t,
+                              child: Text(t),
+                            ))
+                        .toList(),
+                    onChanged: (v) => setState(() => _type = v!),
                   ),
-                ),
-                TextButton(
-                  onPressed: _pickDateTime,
-                  child: const Text('Change'),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-            isIOS
-                ? CupertinoButton.filled(
-                    onPressed: _loading ? null : _save,
-                    child: _loading
-                        ? const CupertinoActivityIndicator()
-                        : Text(titleText),
-                  )
-                : ElevatedButton(
-                    onPressed: _loading ? null : _save,
-                    child: _loading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text(titleText),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _titleCtrl,
+                    decoration: const InputDecoration(labelText: 'Title'),
+                    maxLength: 100,
+                    validator: _required,
                   ),
-          ],
-        ),
-      ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _descCtrl,
+                    decoration: const InputDecoration(labelText: 'Description'),
+                    maxLines: 3,
+                    maxLength: 300,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _portionCtrl,
+                    decoration:
+                        const InputDecoration(labelText: 'Portion / Quantity'),
+                    validator: _required,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _caloriesCtrl,
+                    decoration:
+                        const InputDecoration(labelText: 'Calories (optional)'),
+                    keyboardType: TextInputType.number,
+                    validator: _number,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _proteinCtrl,
+                    decoration: const InputDecoration(
+                        labelText: 'Protein (g, optional)'),
+                    keyboardType: TextInputType.number,
+                    validator: _number,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _carbsCtrl,
+                    decoration:
+                        const InputDecoration(labelText: 'Carbs (g, optional)'),
+                    keyboardType: TextInputType.number,
+                    validator: _number,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _fatsCtrl,
+                    decoration:
+                        const InputDecoration(labelText: 'Fats (g, optional)'),
+                    keyboardType: TextInputType.number,
+                    validator: _number,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'When: ${DateFormat.yMMMd().add_jm().format(_timestamp)}',
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: _pickDateTime,
+                        child: const Text('Change'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  if (isIOS)
+                    CupertinoButton.filled(
+                      onPressed: _loading ? null : _save,
+                      child: _loading
+                          ? const CupertinoActivityIndicator()
+                          : Text(titleText),
+                    )
+                  else
+                    ElevatedButton(
+                      onPressed: _loading ? null : _save,
+                      child: _loading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(titleText),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
 
-    return isIOS
-        ? CupertinoPageScaffold(
-            navigationBar: CupertinoNavigationBar(middle: Text(titleText)),
-            child: SafeArea(child: form),
-          )
-        : Scaffold(
-            appBar: AppBar(title: Text(titleText)),
-            body: form,
-          );
+    if (isIOS) {
+      return CupertinoPageScaffold(
+        navigationBar: CupertinoNavigationBar(middle: Text(titleText)),
+        child: SafeArea(
+          child: Material(
+            color: Colors.transparent,
+            child: form,
+          ),
+        ),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(title: Text(titleText)),
+      body: SafeArea(child: form),
+    );
   }
 }

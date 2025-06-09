@@ -11,10 +11,8 @@ class ReportController {
 
   ReportController(this._firestoreService);
 
-  /// Retrieves all meals for [userId], then computes:
-  ///  • total count
-  ///  • count per meal type
-  ///  • average calories (integer, 0 if none)
+  /// Retrieves all meals for [userId],:
+
   /// Throws on any Firestore error.
   Future<ReportData> fetchReport(String userId) async {
     try {

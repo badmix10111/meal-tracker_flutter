@@ -1,5 +1,4 @@
-// lib/views/report_page.dart
-
+// Flutter and platform packages
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
@@ -7,29 +6,38 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:meal_tracker_flutter/models/metric_models.dart';
 
+// App-specific imports
 import '../controllers/report_controller.dart';
 import '../helpers/firestore_service.dart';
 import '../models/report_data_models.dart';
 
+/// Displays a summary report of meals logged by the user
 class ReportPage extends StatelessWidget {
   const ReportPage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    // Get the currently signed-in user
     final user = FirebaseAuth.instance.currentUser;
+
+    // If not signed in, show fallback screen
     if (user == null) {
       return _buildUnauthenticated(context);
     }
 
+    // Create controller for fetching report data
     final controller = ReportController(FirestoreService());
 
+    // Platform check: Render either Material or Cupertino layout
     final isIOS =
         Theme.of(context).platform == TargetPlatform.iOS || Platform.isIOS;
+
     return isIOS
         ? _buildCupertino(context, controller, user.uid)
         : _buildMaterial(context, controller, user.uid);
   }
 
+  /// UI shown when user is not authenticated
   Widget _buildUnauthenticated(BuildContext context) {
     return Scaffold(
       body: Center(
@@ -41,7 +49,7 @@ class ReportPage extends StatelessWidget {
     );
   }
 
-  // Material layout
+  /// Material layout for Android and web
   Widget _buildMaterial(
       BuildContext context, ReportController controller, String uid) {
     return Scaffold(
@@ -50,7 +58,7 @@ class ReportPage extends StatelessWidget {
     );
   }
 
-  // Cupertino layout
+  /// Cupertino layout for iOS
   Widget _buildCupertino(
       BuildContext context, ReportController controller, String uid) {
     return CupertinoPageScaffold(
@@ -60,22 +68,28 @@ class ReportPage extends StatelessWidget {
     );
   }
 
+  /// Main body that fetches and displays report data
   Widget _body(BuildContext context, ReportController controller, String uid) {
     return FutureBuilder<ReportData>(
-      future: controller.fetchReport(uid),
+      future: controller.fetchReport(uid), // Fetch data from Firestore
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
+          // Show loading indicator while waiting
           return const Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError) {
+          // Show error message if fetch failed
           return _buildError(context, snapshot.error!);
         }
+
+        // Render report list if data is available
         final data = snapshot.data!;
         return _buildReportList(context, data);
       },
     );
   }
 
+  /// Widget to display error messages
   Widget _buildError(BuildContext context, Object error) {
     return Center(
       child: Padding(
@@ -89,6 +103,7 @@ class ReportPage extends StatelessWidget {
     );
   }
 
+  /// Converts [ReportData] into a list of [Metric] objects and renders cards
   Widget _buildReportList(BuildContext context, ReportData data) {
     final metrics = <Metric>[
       Metric('Total meals logged', data.totalMeals.toString()),
@@ -110,15 +125,15 @@ class ReportPage extends StatelessWidget {
   }
 }
 
+/// UI widget for rendering a single metric row as a card
 class _ReportCard extends StatelessWidget {
   final String title;
   final String value;
 
   const _ReportCard({
-    Key? key,
     required this.title,
     required this.value,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
